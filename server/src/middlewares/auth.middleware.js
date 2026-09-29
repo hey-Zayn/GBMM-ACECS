@@ -1,4 +1,4 @@
-import { AuthService } from '../services/auth.service.js';
+import { authService } from '../services/auth.service.js';
 import { AUTH_COOKIE_NAME } from '../config/constants.js';
 import { UnauthorizedError } from '../utils/errors.js';
 
@@ -14,8 +14,8 @@ export async function requireAuth(req, res, next) {
       throw new UnauthorizedError('Authentication required');
     }
 
-    const payload = await AuthService.verifySessionToken(token);
-    req.user = payload;
+    const sessionData = await authService.verifyAndTouchSession(token);
+    req.user = sessionData;
     next();
   } catch (err) {
     next(err);

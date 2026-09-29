@@ -1,15 +1,17 @@
 import { AppError } from '../utils/errors.js';
-import { env } from '../config/env.js';
 
-export function errorHandler(err, req, res, next) {
-  const statusCode = err instanceof AppError ? err.statusCode : (err.statusCode || 500);
-  const code = err instanceof AppError ? err.code : (err.code || 'INTERNAL_ERROR');
-  const message = err.message || 'An unexpected error occurred';
-  const details = err.details || null;
+export function errorHandler(error, req, res, next) {
+  const statusCode = error instanceof AppError ? error.statusCode : 500;
+  const code = error instanceof AppError ? error.code : 'INTERNAL_ERROR';
+  const message = error instanceof AppError ? error.message : 'An unexpected error occurred';
 
-  // Log error (avoid logging secrets or tokens)
   if (statusCode >= 500) {
-    console.error(`[Server Error] ${req.method} ${req.originalUrl}:`, err);
+    console.error('[Server Error]', {
+      method: req.method,
+      path: req.originalUrl,
+      code,
+      message,
+    });
   }
 
   res.status(statusCode).json({
@@ -17,8 +19,7 @@ export function errorHandler(err, req, res, next) {
     error: {
       code,
       message,
-      ...(details ? { details } : {}),
-      ...(env.NODE_ENV === 'development' && statusCode >= 500 ? { stack: err.stack } : {}),
+      ...(error.details ? { details: error.details } : {}),
     },
   });
 }

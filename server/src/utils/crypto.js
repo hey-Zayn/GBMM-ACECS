@@ -2,66 +2,55 @@ import crypto from 'node:crypto';
 import { env } from '../config/env.js';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 12; // 96-bit IV recommended for GCM
+const IV_LENGTH = 12;
+const AUTH_TAG_LENGTH = 16;
 const PREFIX = 'enc:v1';
 
-/**
- * Derives a 32-byte key from the configured secret.
- * @returns {Buffer}
- */
 function getEncryptionKey() {
   return crypto.createHash('sha256').update(env.ENCRYPTION_SECRET).digest();
 }
 
-/**
- * Encrypts a plaintext string using AES-256-GCM.
- * Stored format: enc:v1:<iv_hex>:<auth_tag_hex>:<ciphertext_hex>
- * @param {string} plaintext
- * @returns {string}
- */
 export function encryptSecret(plaintext) {
   if (typeof plaintext !== 'string') {
     throw new TypeError('Plaintext must be a string');
   }
 
   const iv = crypto.randomBytes(IV_LENGTH);
-  const key = getEncryptionKey();
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
 
-  let encrypted = cipher.update(plaintext, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-
-  const authTag = cipher.getAuthTag().toString('hex');
-  const ivHex = iv.toString('hex');
-
-  return `${PREFIX}:${ivHex}:${authTag}:${encrypted}`;
+  return [PREFIX, iv.toString('hex'), authTag.toString('hex'), ciphertext.toString('hex')].join(':');
 }
 
-/**
- * Decrypts an AES-256-GCM encrypted envelope.
- * @param {string} encryptedPayload
- * @returns {string}
- */
 export function decryptSecret(encryptedPayload) {
-  if (!encryptedPayload || typeof encryptedPayload !== 'string') {
+  if (typeof encryptedPayload !== 'string' || !encryptedPayload) {
     throw new TypeError('Encrypted payload must be a string');
   }
 
-  const parts = encryptedPayload.split(':');
-  if (parts.length !== 4 || `${parts[0]}:${parts[1]}` !== PREFIX) {
+  const [prefix, version, ivHex, authTagHex, ciphertextHex] = encryptedPayload.split(':');
+  if (`${prefix}:${version}` !== PREFIX) {
     throw new Error('Invalid encryption payload format');
   }
 
-  const [, , ivHex, authTagHex, ciphertextHex] = parts;
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(authTagHex, 'hex');
-  const key = getEncryptionKey();
-
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  const iv = parseHex(ivHex, IV_LENGTH, 'iv');
+  const authTag = parseHex(authTagHex, AUTH_TAG_LENGTH, 'authentication tag');
+  const ciphertext = parseHex(ciphertextHex, null, 'ciphertext');
+  const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
   decipher.setAuthTag(authTag);
 
-  let decrypted = decipher.update(ciphertextHex, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+}
 
-  return decrypted;
+function parseHex(value, expectedLength, name) {
+  if (!value || !/^[0-9a-f]+$/i.test(value) || value.length % 2 !== 0) {
+    throw new Error(`Invalid ${name}`);
+  }
+
+  const buffer = Buffer.from(value, 'hex');
+  if (expectedLength !== null && buffer.length !== expectedLength) {
+    throw new Error(`Invalid ${name}`);
+  }
+
+  return buffer;
 }
