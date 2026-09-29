@@ -1,0 +1,12 @@
+/plans
+AGENTS.md
+.claude
+/docs
+CLAUDE.md
+
+
+# Node Modules
+node_modules
+dist
+build
+*.log
