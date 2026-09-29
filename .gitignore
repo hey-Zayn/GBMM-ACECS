@@ -3,10 +3,16 @@ AGENTS.md
 .claude
 /docs
 CLAUDE.md
-
+graphify-out
+.codex
+.vscode
 
 # Node Modules
 node_modules
+.pnpm-store
 dist
 build
+coverage
 *.log
+.env
+.env.*

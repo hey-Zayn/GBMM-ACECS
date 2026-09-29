@@ -1,6 +1,7 @@
 export const AUTH_COOKIE_NAME = 'gmass_session';
-
-export const JWT_EXPIRY = '7d';
+export const OAUTH_CHALLENGE_COOKIE_NAME = 'gmass_oauth_challenge';
+export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const OAUTH_CHALLENGE_TTL_MS = 10 * 60 * 1000;
 
 export const GOOGLE_OAUTH_SCOPES = {
   USER_AUTH: [

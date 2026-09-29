@@ -1,17 +1,25 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/auth.controller.js';
+import { authController } from '../controllers/auth.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { googleCallbackQuerySchema } from '../schemas/auth.schema.js';
+import {
+  loginRateLimit,
+  oauthCallbackRateLimit,
+  logoutRateLimit,
+} from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
-// Public login routes
-router.get('/google', AuthController.googleLogin);
-router.get('/google/callback', validate(googleCallbackQuerySchema, 'query'), AuthController.googleCallback);
-router.post('/logout', AuthController.logout);
+router.get('/google', loginRateLimit, authController.googleLogin.bind(authController));
+router.get(
+  '/google/callback',
+  oauthCallbackRateLimit,
+  validate(googleCallbackQuerySchema, 'query'),
+  authController.googleCallback.bind(authController)
+);
+router.post('/logout', logoutRateLimit, authController.logout.bind(authController));
 
-// Protected user route
-router.get('/me', requireAuth, AuthController.me);
+router.get('/me', requireAuth, authController.me.bind(authController));
 
 export default router;

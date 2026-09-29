@@ -1,0 +1,19 @@
+import { describe, expect, it } from 'vitest';
+import { SmtpProvider } from '../../src/providers/smtp.provider.js';
+
+describe('SMTP provider network protection', () => {
+  it.each(['127.0.0.1', '10.0.0.1', '172.16.0.1', '192.168.1.1', '169.254.169.254', '::1'])(
+    'rejects private host %s',
+    async (host) => {
+      await expect(
+        SmtpProvider.verifyConnection({
+          host,
+          port: 587,
+          secure: false,
+          user: 'user@example.com',
+          pass: 'secret',
+        })
+      ).rejects.toThrow('SMTP host is not allowed');
+    }
+  );
+});

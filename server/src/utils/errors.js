@@ -1,10 +1,4 @@
 export class AppError extends Error {
-  /**
-   * @param {string} message
-   * @param {number} statusCode
-   * @param {string} code
-   * @param {unknown} [details]
-   */
   constructor(message, statusCode = 500, code = 'INTERNAL_ERROR', details = null) {
     super(message);
     this.name = this.constructor.name;

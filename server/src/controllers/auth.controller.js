@@ -1,68 +1,69 @@
-import { AuthService } from '../services/auth.service.js';
-import { AUTH_COOKIE_NAME } from '../config/constants.js';
+import { authService } from '../services/auth.service.js';
+import {
+  AUTH_COOKIE_NAME,
+  OAUTH_CHALLENGE_COOKIE_NAME,
+  OAUTH_CHALLENGE_TTL_MS,
+  SESSION_TTL_MS,
+} from '../config/constants.js';
 import { env } from '../config/env.js';
 
+const sessionCookieOptions = {
+  httpOnly: true,
+  secure: env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+};
+
+const challengeCookieOptions = {
+  ...sessionCookieOptions,
+  maxAge: OAUTH_CHALLENGE_TTL_MS,
+};
+
 export class AuthController {
-  /**
-   * Redirects user to Google OAuth login URL.
-   */
-  static googleLogin(req, res) {
-    const url = AuthService.getGoogleLoginUrl();
-    res.redirect(url);
-  }
-
-  /**
-   * Handles Google OAuth callback and sets session cookie.
-   */
-  static async googleCallback(req, res, next) {
+  async googleLogin(req, res, next) {
     try {
-      const { code } = req.query;
-      const { user, token } = await AuthService.processGoogleLogin(code);
-
-      res.cookie(AUTH_COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      res.status(200).json({
-        success: true,
-        data: {
-          user,
-          token,
-        },
-      });
-    } catch (err) {
-      next(err);
+      const { url, browserChallenge } = await authService.getGoogleLoginUrl();
+      res.cookie(OAUTH_CHALLENGE_COOKIE_NAME, browserChallenge, challengeCookieOptions);
+      res.redirect(url);
+    } catch (error) {
+      next(error);
     }
   }
 
-  /**
-   * Clears the session cookie.
-   */
-  static logout(req, res) {
-    res.clearCookie(AUTH_COOKIE_NAME, {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
+  async googleCallback(req, res, next) {
+    try {
+      const { code, state } = req.query;
+      const browserChallenge = req.cookies?.[OAUTH_CHALLENGE_COOKIE_NAME];
+      const { user, sessionToken } = await authService.processGoogleLogin(
+        code,
+        state,
+        browserChallenge
+      );
 
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+      res.clearCookie(OAUTH_CHALLENGE_COOKIE_NAME, sessionCookieOptions);
+      res.cookie(AUTH_COOKIE_NAME, sessionToken, {
+        ...sessionCookieOptions,
+        maxAge: SESSION_TTL_MS,
+      });
+      res.status(200).json({ success: true, data: { user } });
+    } catch (error) {
+      next(error);
+    }
   }
 
-  /**
-   * Returns authenticated user info.
-   */
-  static me(req, res) {
-    res.status(200).json({
-      success: true,
-      data: {
-        user: req.user,
-      },
-    });
+  async logout(req, res, next) {
+    try {
+      await authService.revokeSession(req.cookies?.[AUTH_COOKIE_NAME]);
+      res.clearCookie(AUTH_COOKIE_NAME, sessionCookieOptions);
+      res.status(200).json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  me(req, res) {
+    res.status(200).json({ success: true, data: { user: req.user } });
   }
 }
+
+export const authController = new AuthController();
