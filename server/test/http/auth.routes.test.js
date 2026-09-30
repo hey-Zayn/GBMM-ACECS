@@ -146,4 +146,15 @@ describe('authentication HTTP routes', () => {
     expect(authServiceMock.revokeSession).toHaveBeenCalledWith('opaque-session-token');
     expect(response.headers['set-cookie'].join(';')).toContain('gmass_session=;');
   });
+
+  it('clears the session cookie when session revocation fails', async () => {
+    authServiceMock.revokeSession.mockRejectedValue(new Error('database unavailable'));
+
+    const response = await request(app)
+      .post('/api/v1/auth/logout')
+      .set('Cookie', 'gmass_session=opaque-session-token');
+
+    expect(response.status).toBe(500);
+    expect(response.headers['set-cookie'].join(';')).toContain('gmass_session=;');
+  });
 });
