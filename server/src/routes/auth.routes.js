@@ -12,7 +12,6 @@ import {
 import {
   loginRateLimit,
   oauthCallbackRateLimit,
-  logoutRateLimit,
 } from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
@@ -48,7 +47,7 @@ router.get(
   validate(googleCallbackQuerySchema, 'query'),
   authController.googleCallback.bind(authController)
 );
-router.post('/logout', logoutRateLimit, authController.logout.bind(authController));
+router.post('/logout', authController.logout.bind(authController));
 
 router.get('/me', requireAuth, authController.me.bind(authController));
 
