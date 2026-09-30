@@ -3,6 +3,8 @@ import { api } from '@/lib/axios'
 export type CurrentUser = {
   userId: string
   workspaceId: string
+  workspaceName: string
+  workspaceRole: 'OWNER' | 'MEMBER'
   email: string
   sessionId: string
   displayName: string

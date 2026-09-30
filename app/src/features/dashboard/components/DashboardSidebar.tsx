@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation"
 
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser"
+import { useWorkspaceActions } from "@/features/workspaces/hooks/useWorkspaceActions"
+import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces"
 import {
   Sidebar,
   SidebarContent,
@@ -20,9 +22,10 @@ import type { Workspace } from "./sidebar/types"
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
-  const workspace: Workspace | null = user
-    ? { id: user.workspaceId, name: "Current workspace", plan: "Active workspace" }
-    : null
+  const workspaces = useWorkspaces()
+  const workspaceActions = useWorkspaceActions()
+  const currentWorkspace: Workspace | null = workspaces.data?.workspaces.find((workspace) => workspace.id === workspaces.data.currentWorkspaceId)
+    ?? (user ? { id: user.workspaceId, name: user.workspaceName, role: user.workspaceRole } : null)
 
   return (
     <Sidebar
@@ -30,7 +33,15 @@ export function DashboardSidebar() {
       className="w-[265px] border-none p-3 [&_[data-slot=sidebar-inner]]:bg-[#EBEDF2] [&_[data-slot=sidebar-inner]]:p-2.5 [&_[data-slot=sidebar-inner]]:ring-0"
     >
       <SidebarBrandHeader />
-      <WorkspaceSwitcher workspace={workspace} />
+      <WorkspaceSwitcher
+        workspace={currentWorkspace}
+        workspaces={workspaces.data?.workspaces ?? []}
+        isLoading={workspaces.isLoading}
+        isSwitching={workspaceActions.isSwitching}
+        isCreating={workspaceActions.isCreating}
+        onSwitchWorkspace={workspaceActions.switchWorkspace}
+        onCreateWorkspace={workspaceActions.createWorkspace}
+      />
 
       <SidebarContent className="gap-0 overflow-y-auto px-0 py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {dashboardNavigationGroups.map((group) => (

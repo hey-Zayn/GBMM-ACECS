@@ -56,6 +56,7 @@ export function findValidSession(tokenHash) {
 export function findMembership(userId, workspaceId) {
   return prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
+    include: { workspace: true },
   });
 }
 

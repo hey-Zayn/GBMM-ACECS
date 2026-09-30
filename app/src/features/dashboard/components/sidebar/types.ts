@@ -1,7 +1,9 @@
+import type { WorkspaceRole } from '@/features/workspaces/types'
+
 export type Workspace = {
   id: string
   name: string
-  plan: string
+  role: WorkspaceRole
 }
 
 export type UserProfile = {
