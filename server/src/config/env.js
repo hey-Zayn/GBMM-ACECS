@@ -27,6 +27,12 @@ const envSchema = z.object({
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),
     WEB_ORIGIN: z.string().url(),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+    SMTP_SECURE: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASS: z.string().min(1).optional(),
+    SMTP_FROM: z.string().trim().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

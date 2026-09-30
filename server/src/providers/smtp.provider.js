@@ -1,8 +1,17 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import nodemailer from 'nodemailer';
+import { env } from '../config/env.js';
 
 export class SmtpProvider {
+  static async sendEmail({ to, subject, text, html, attachments }) {
+    if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
+      throw new Error('SMTP email delivery is not configured');
+    }
+
+    await getTransporter().sendMail({ from: env.SMTP_FROM, to, subject, text, html, attachments });
+  }
+
   static async verifyConnection({ host, port, secure, user, pass }) {
     await assertPublicHost(host);
     const transporter = nodemailer.createTransport({
@@ -22,6 +31,20 @@ export class SmtpProvider {
       transporter.close();
     }
   }
+}
+
+let transporter;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+    });
+  }
+  return transporter;
 }
 
 async function assertPublicHost(host) {

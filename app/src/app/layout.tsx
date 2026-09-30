@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { Toaster } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,7 +15,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <Toaster>{children}</Toaster>
+        </QueryProvider>
       </body>
     </html>
   );

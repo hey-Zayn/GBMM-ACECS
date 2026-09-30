@@ -1,9 +1,12 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NotFoundError } from '../../src/utils/errors.js';
 
 const authServiceMock = vi.hoisted(() => ({
   getGoogleLoginUrl: vi.fn(),
   processGoogleLogin: vi.fn(),
+  requestEmailOtp: vi.fn(),
+  verifyEmailOtp: vi.fn(),
   verifyAndTouchSession: vi.fn(),
   revokeSession: vi.fn(),
 }));
@@ -38,7 +41,45 @@ describe('authentication HTTP routes', () => {
     expect(response.headers['set-cookie'][0]).toContain('HttpOnly');
   });
 
-  it('creates a session without returning the raw token in JSON', async () => {
+  it('requests an email OTP with a generic response', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/email/request-otp')
+      .send({ email: 'user@example.com' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toContain('sign-in code');
+    expect(authServiceMock.requestEmailOtp).toHaveBeenCalledWith('user@example.com');
+  });
+
+  it('returns a signup response when the email has no account', async () => {
+    authServiceMock.requestEmailOtp.mockRejectedValue(
+      new NotFoundError('Account not found. Please sign up first.')
+    );
+
+    const response = await request(app)
+      .post('/api/v1/auth/email/request-otp')
+      .send({ email: 'new@example.com' });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error.message).toContain('Please sign up first');
+  });
+
+  it('creates a session after a valid email OTP', async () => {
+    authServiceMock.verifyEmailOtp.mockResolvedValue({
+      user: { id: 'user-id', email: 'user@example.com', workspaceId: 'workspace-id' },
+      sessionToken: 'opaque-session-token',
+    });
+
+    const response = await request(app)
+      .post('/api/v1/auth/email/verify-otp')
+      .send({ email: 'user@example.com', otp: '123456' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.user.email).toBe('user@example.com');
+    expect(response.headers['set-cookie'].join(';')).toContain('gmass_session=opaque-session-token');
+  });
+
+  it('creates a session and redirects to the dashboard without returning the raw token', async () => {
     authServiceMock.processGoogleLogin.mockResolvedValue({
       user: {
         id: 'user-id',
@@ -54,8 +95,8 @@ describe('authentication HTTP routes', () => {
       .get('/api/v1/auth/google/callback?code=code&state=state')
       .set('Cookie', 'gmass_oauth_challenge=browser-challenge');
 
-    expect(response.status).toBe(200);
-    expect(response.body.data.user.email).toBe('user@example.com');
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('http://localhost:3000/dashboard');
     expect(response.body).not.toHaveProperty('data.sessionToken');
     expect(response.headers['set-cookie'].join(';')).toContain('gmass_session=opaque-session-token');
   });
