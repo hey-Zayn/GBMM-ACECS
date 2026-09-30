@@ -278,6 +278,8 @@ export class AuthService {
     return {
       userId: session.userId,
       workspaceId: session.workspaceId,
+      workspaceName: membership.workspace.name,
+      workspaceRole: membership.role,
       email: session.user.email,
       sessionId: session.id,
       displayName: session.user.displayName,
