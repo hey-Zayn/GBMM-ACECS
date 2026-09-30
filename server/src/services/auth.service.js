@@ -202,7 +202,7 @@ export class AuthService {
   async getGoogleLoginUrl() {
     const state = await createOAuthState({ intent: 'login' });
     return {
-      url: GoogleProvider.getUserAuthUrl(state.nonce),
+      url: GoogleProvider.getUserAuthUrl(state.state || state.nonce),
       browserChallenge: state.browserChallenge,
     };
   }

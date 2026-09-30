@@ -22,36 +22,82 @@ export class MailboxController {
     }
   }
 
+  async discover(req, res, next) {
+    try {
+      const result = mailboxService.discoverMailboxProvider(req.body.email);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async googleCallback(req, res, next) {
     try {
       const { code, state } = req.query;
       const challenge = req.cookies?.[OAUTH_CHALLENGE_COOKIE_NAME];
-      const mailbox = await mailboxService.handleGoogleMailboxCallback(
+      await mailboxService.handleGoogleMailboxCallback(
         code,
         state,
         challenge,
-        req.user
+        req.user,
+        req.query.error
       );
       res.clearCookie(OAUTH_CHALLENGE_COOKIE_NAME, challengeCookieOptions);
-      const { encryptedCredentials, ...safeMailbox } = mailbox;
-      res.status(201).json({
-        success: true,
-        message: 'Gmail mailbox connected successfully',
-        data: safeMailbox,
-      });
+      redirectToMailboxPage(res, 'connected');
     } catch (error) {
-      next(error);
+      res.clearCookie(OAUTH_CHALLENGE_COOKIE_NAME, challengeCookieOptions);
+      redirectToMailboxPage(res, req.query.error ? 'cancelled' : 'connection_failed');
     }
   }
 
   async connectSmtp(req, res, next) {
     try {
       const mailbox = await mailboxService.connectSmtpMailbox(req.user.workspaceId, req.body);
-      const { encryptedCredentials, ...safeMailbox } = mailbox;
       res.status(201).json({
         success: true,
         message: 'SMTP mailbox connected successfully',
-        data: safeMailbox,
+        data: mailbox,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async list(req, res, next) {
+    try {
+      const mailboxes = await mailboxService.getWorkspaceMailboxes(req.user.workspaceId);
+      res.status(200).json({ success: true, data: { mailboxes } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async disconnect(req, res, next) {
+    try {
+      const mailbox = await mailboxService.disconnectMailbox(
+        req.user.workspaceId,
+        req.params.mailboxId
+      );
+      res.status(200).json({
+        success: true,
+        message: 'Mailbox disconnected successfully',
+        data: mailbox,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async test(req, res, next) {
+    try {
+      const mailbox = await mailboxService.testMailboxConnection(
+        req.user.workspaceId,
+        req.params.mailboxId
+      );
+      res.status(200).json({
+        success: true,
+        message: 'Mailbox connection verified successfully',
+        data: mailbox,
       });
     } catch (error) {
       next(error);
@@ -60,3 +106,9 @@ export class MailboxController {
 }
 
 export const mailboxController = new MailboxController();
+
+function redirectToMailboxPage(res, result) {
+  const redirectUrl = new URL('/dashboard/mailboxes', env.WEB_ORIGIN);
+  redirectUrl.searchParams.set('google', result);
+  res.redirect(302, redirectUrl.toString());
+}

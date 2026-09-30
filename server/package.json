@@ -14,7 +14,8 @@
     "prisma:generate": "dotenv run -f src/.env -- prisma generate",
     "prisma:push": "dotenv run -f src/.env -- prisma db push",
     "prisma:migrate": "dotenv run -f src/.env -- prisma migrate dev",
-    "prisma:studio": "dotenv run -f src/.env -- prisma studio"
+    "prisma:studio": "dotenv run -f src/.env -- prisma studio",
+    "prisma:seed": "dotenv run -f src/.env -- node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

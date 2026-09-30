@@ -18,6 +18,9 @@ vi.mock('../../src/middlewares/rateLimit.middleware.js', () => ({
   loginRateLimit: passThroughRateLimit,
   oauthCallbackRateLimit: passThroughRateLimit,
   logoutRateLimit: passThroughRateLimit,
+  mailboxConnectRateLimit: passThroughRateLimit,
+  mailboxOAuthRateLimit: passThroughRateLimit,
+  mailboxTestRateLimit: passThroughRateLimit,
 }));
 
 const { default: app } = await import('../../src/app.js');

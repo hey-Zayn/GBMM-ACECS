@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 
 import { toast } from '@/components/ui/toast'
+import { MAILBOXES_QUERY_KEY } from '@/features/mailboxes/hooks/useMailboxes'
 import { createWorkspace, switchWorkspace } from '../api/workspaces.api'
 import { WORKSPACES_QUERY_KEY } from './useWorkspaces'
 import type { WorkspaceSummary } from '../types'
@@ -25,6 +26,7 @@ export function useWorkspaceActions() {
       }
     })
     queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY })
+    queryClient.invalidateQueries({ queryKey: MAILBOXES_QUERY_KEY })
     router.replace('/dashboard')
   }
 
