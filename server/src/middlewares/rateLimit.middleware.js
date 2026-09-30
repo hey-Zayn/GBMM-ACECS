@@ -40,6 +40,24 @@ export const oauthCallbackRateLimit = rateLimit({
   keyPrefix: 'auth:oauth-callback',
 });
 
+export const mailboxTestRateLimit = rateLimit({
+  windowSec: 60,
+  max: 10,
+  keyPrefix: 'mailbox:test',
+});
+
+export const mailboxConnectRateLimit = rateLimit({
+  windowSec: 60,
+  max: 10,
+  keyPrefix: 'mailbox:connect',
+});
+
+export const mailboxOAuthRateLimit = rateLimit({
+  windowSec: 60,
+  max: 20,
+  keyPrefix: 'mailbox:oauth-callback',
+});
+
 export const logoutRateLimit = rateLimit({
   windowSec: 60,
   max: 20,

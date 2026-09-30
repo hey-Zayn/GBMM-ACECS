@@ -16,4 +16,28 @@ describe('SMTP provider network protection', () => {
       ).rejects.toThrow('SMTP host is not allowed');
     }
   );
+
+  it('rejects uncommon SMTP ports before opening a connection', async () => {
+    await expect(
+      SmtpProvider.verifyConnection({
+        host: 'smtp.example.com',
+        port: 22,
+        secure: false,
+        user: 'user@example.com',
+        pass: 'secret',
+      })
+    ).rejects.toThrow('SMTP port is not allowed');
+  });
+
+  it('rejects URL-shaped SMTP hosts', async () => {
+    await expect(
+      SmtpProvider.verifyConnection({
+        host: 'https://smtp.example.com',
+        port: 587,
+        secure: false,
+        user: 'user@example.com',
+        pass: 'secret',
+      })
+    ).rejects.toThrow('SMTP host is not allowed');
+  });
 });

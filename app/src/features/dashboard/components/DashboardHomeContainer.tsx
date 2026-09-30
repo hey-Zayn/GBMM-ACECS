@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { BarChart3, Contact, Inbox, Mail, Plus, Send, Users, MousePointerClick } from 'lucide-react'
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser'
+import { useMailboxes } from '@/features/mailboxes/hooks/useMailboxes'
 import { useDashboardStore } from '../store/dashboard.store'
 import { DashboardMailboxHealth } from './DashboardMailboxHealth'
 import { DashboardMetricCard } from './DashboardMetricCard'
@@ -19,6 +20,7 @@ const dashboardActions = [
 
 export function DashboardHomeContainer() {
   const { data: user } = useCurrentUser()
+  const mailboxesQuery = useMailboxes()
   const searchQuery = useDashboardStore((state) => state.searchQuery.trim().toLowerCase())
   const actions = dashboardActions.filter((action) =>
     `${action.label} ${action.description}`.toLowerCase().includes(searchQuery)
@@ -50,7 +52,7 @@ export function DashboardHomeContainer() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.8fr)]">
         <DashboardRecentCampaigns />
-        <DashboardMailboxHealth />
+        <DashboardMailboxHealth mailboxes={mailboxesQuery.data ?? []} isLoading={mailboxesQuery.isLoading} isError={mailboxesQuery.isError} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">

@@ -24,6 +24,7 @@ const envSchema = z.object({
     GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
     GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
     GOOGLE_REDIRECT_URI: z.string().url("GOOGLE_REDIRECT_URI must be a valid URL"),
+    GOOGLE_MAILBOX_REDIRECT_URI: z.string().url("GOOGLE_MAILBOX_REDIRECT_URI must be a valid URL").optional(),
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),
     WEB_ORIGIN: z.string().url(),

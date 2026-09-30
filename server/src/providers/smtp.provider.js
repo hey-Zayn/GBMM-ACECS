@@ -13,6 +13,7 @@ export class SmtpProvider {
   }
 
   static async verifyConnection({ host, port, secure, user, pass }) {
+    assertAllowedPort(port);
     await assertPublicHost(host);
     const transporter = nodemailer.createTransport({
       host,
@@ -48,16 +49,30 @@ function getTransporter() {
 }
 
 async function assertPublicHost(host) {
+  if (typeof host !== 'string' || !host.trim() || host.includes('/')) {
+    throw new Error('SMTP host is not allowed');
+  }
+  host = host.trim().toLowerCase();
+
   if (net.isIP(host)) {
     if (isPrivateAddress(host)) {
       throw new Error('SMTP host is not allowed');
     }
     return;
   }
+  if (host.includes(':')) {
+    throw new Error('SMTP host is not allowed');
+  }
 
   const records = await dns.lookup(host, { all: true });
   if (!records.length || records.some(record => isPrivateAddress(record.address))) {
     throw new Error('SMTP host is not allowed');
+  }
+}
+
+function assertAllowedPort(port) {
+  if (![25, 465, 587, 2525].includes(port)) {
+    throw new Error('SMTP port is not allowed');
   }
 }
 

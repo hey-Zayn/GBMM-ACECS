@@ -1,11 +1,13 @@
 import crypto from 'node:crypto';
 import { redis } from '../config/redis.js';
+import { env } from '../config/env.js';
 
 const OAUTH_STATE_PREFIX = 'auth:oauth-state:';
 const OAUTH_STATE_TTL_SECONDS = 600;
 
 export async function createOAuthState(options = {}) {
   const nonce = crypto.randomBytes(32).toString('hex');
+  const state = `${nonce}.${signNonce(nonce)}`;
   const browserChallenge = crypto.randomBytes(32).toString('base64url');
   const key = `${OAUTH_STATE_PREFIX}${nonce}`;
   const payload = JSON.stringify({
@@ -17,11 +19,12 @@ export async function createOAuthState(options = {}) {
   });
 
   await redis.set(key, payload, 'EX', OAUTH_STATE_TTL_SECONDS);
-  return { nonce, browserChallenge };
+  return { nonce, state, browserChallenge };
 }
 
-export async function consumeOAuthState(nonce, browserChallenge) {
-  if (!nonce || typeof nonce !== 'string') {
+export async function consumeOAuthState(state, browserChallenge) {
+  const nonce = verifyStateSignature(state);
+  if (!nonce) {
     throw new Error('Invalid OAuth state: missing nonce');
   }
   if (!browserChallenge || typeof browserChallenge !== 'string') {
@@ -45,4 +48,31 @@ export async function consumeOAuthState(nonce, browserChallenge) {
 
 function hashValue(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function signNonce(nonce) {
+  return crypto.createHmac('sha256', env.ENCRYPTION_SECRET).update(nonce).digest('base64url');
+}
+
+function verifyStateSignature(state) {
+  if (typeof state !== 'string') {
+    return null;
+  }
+
+  const [nonce, signature] = state.split('.');
+  if (!nonce || !signature || !/^[a-f0-9]{64}$/.test(nonce)) {
+    return null;
+  }
+
+  const expected = signNonce(nonce);
+  const actualBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    actualBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(actualBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+
+  return nonce;
 }

@@ -21,7 +21,7 @@ export class GoogleProvider {
   }
 
   static getMailboxAuthUrl(state) {
-    const client = this.createOAuthClient();
+    const client = this.createOAuthClient(env.GOOGLE_MAILBOX_REDIRECT_URI);
     return client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
@@ -30,8 +30,8 @@ export class GoogleProvider {
     });
   }
 
-  static async exchangeCode(code) {
-    const client = this.createOAuthClient();
+  static async exchangeCode(code, customRedirectUri) {
+    const client = this.createOAuthClient(customRedirectUri);
     const { tokens } = await client.getToken(code);
     return tokens;
   }
