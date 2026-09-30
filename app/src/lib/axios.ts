@@ -22,7 +22,7 @@ export const api = axios.create({
 });
 
 api.interceptors.response.use(
-  response => response.data,
+  response => response,
   error => {
     const statusCode = error.response?.status || 500;
     const apiError = error.response?.data?.error;

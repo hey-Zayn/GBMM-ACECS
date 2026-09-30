@@ -2,9 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ApiError } from '@/lib/axios'
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser'
-import { AuthErrorMessage } from '../components/AuthErrorMessage'
 import { AuthLoading } from '../components/AuthLoading'
 import { AuthHeader } from '../components/AuthHeader'
 import { AuthFooter } from '../components/AuthFooter'
@@ -30,19 +28,12 @@ export function LoginContainer() {
     )
   }
 
-  const isUnauthorized = currentUser.error instanceof ApiError && currentUser.error.statusCode === 401
-
   return (
     <div className="w-full overflow-hidden rounded-md bg-white p-3 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.06)] sm:p-4 lg:p-5">
       <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2 lg:gap-6 min-h-[620px]">
         {/* Left Column: Top bar, form, footer */}
         <div className="flex flex-col  justify-between p-4">
           <AuthHeader />
-          {currentUser.error && !isUnauthorized && (
-            <div className="my-4">
-              <AuthErrorMessage />
-            </div>
-          )}
           <LoginCard />
           <AuthFooter />
         </div>

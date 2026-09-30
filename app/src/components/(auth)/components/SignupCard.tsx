@@ -1,56 +1,37 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { User } from 'lucide-react'
-import { ApiError } from '@/lib/axios'
 import { GoogleLoginButton } from '@/features/auth/components/GoogleLoginButton'
-import { useEmailOtp } from '@/features/auth/hooks/useEmailOtp'
-import { toast } from '@/components/ui/toast'
 import { LoginDivider } from './LoginDivider'
 
-export function LoginCard() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [otp, setOtp] = useState('')
-  const [hasRequestedOtp, setHasRequestedOtp] = useState(false)
-  const { requestOtp, verifyOtp, isRequesting, isVerifying } = useEmailOtp()
+type SignupCardProps = {
+  displayName: string
+  email: string
+  otp: string
+  hasRequestedOtp: boolean
+  isRequesting: boolean
+  isVerifying: boolean
+  onDisplayNameChange: (value: string) => void
+  onEmailChange: (value: string) => void
+  onOtpChange: (value: string) => void
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+  onChangeEmail: () => void
+}
 
-  async function handleRequestOtp(event: React.FormEvent) {
-    event.preventDefault()
-    try {
-      await requestOtp({ email })
-      setHasRequestedOtp(true)
-      toast.add({
-        title: 'Code sent',
-        description: 'Check your email for the six-digit sign-in code.',
-        type: 'success',
-      })
-    } catch (error) {
-      const isMissingAccount = error instanceof ApiError && error.statusCode === 404
-      toast.add({
-        title: isMissingAccount ? 'Account not found' : 'Unable to send code',
-        description: isMissingAccount ? 'Please sign up first.' : 'Please try again in a moment.',
-        type: 'error',
-      })
-    }
-  }
-
-  async function handleVerifyOtp(event: React.FormEvent) {
-    event.preventDefault()
-    try {
-      await verifyOtp({ email, otp })
-      router.replace('/dashboard')
-    } catch {
-      toast.add({
-        title: 'Invalid code',
-        description: 'The code is invalid or expired. Please request a new code.',
-        type: 'error',
-      })
-    }
-  }
-
+export function SignupCard({
+  displayName,
+  email,
+  otp,
+  hasRequestedOtp,
+  isRequesting,
+  isVerifying,
+  onDisplayNameChange,
+  onEmailChange,
+  onOtpChange,
+  onSubmit,
+  onChangeEmail,
+}: SignupCardProps) {
   return (
     <div className="mx-auto my-auto flex w-full max-w-[340px] flex-col items-center text-center">
       <div className="mb-3.5 rounded-lg border border-slate-200/80 bg-white p-[2px] shadow-2xs">
@@ -59,8 +40,8 @@ export function LoginCard() {
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back!</h1>
-      <p className="mt-1 text-xs font-normal text-slate-400">Sign in to continue where you left off.</p>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create your account</h1>
+      <p className="mt-1 text-xs font-normal text-slate-400">Start managing your campaigns with ACECS.</p>
 
       <div className="mt-6 w-full space-y-2.5">
         <GoogleLoginButton />
@@ -68,13 +49,28 @@ export function LoginCard() {
 
       <LoginDivider />
 
-      <form className="w-full space-y-2.5" onSubmit={hasRequestedOtp ? handleVerifyOtp : handleRequestOtp}>
+      <form className="w-full space-y-2.5" onSubmit={onSubmit}>
         <input
-          id="email-input"
+          id="display-name-input"
+          type="text"
+          name="displayName"
+          value={displayName}
+          onChange={(event) => onDisplayNameChange(event.target.value)}
+          placeholder="Your name"
+          autoComplete="name"
+          required
+          minLength={2}
+          maxLength={80}
+          disabled={hasRequestedOtp}
+          className="h-10 w-full rounded-lg border border-slate-200/90 bg-white px-3.5 text-xs text-slate-900 shadow-2xs transition-all placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50"
+        />
+
+        <input
+          id="signup-email-input"
           type="email"
           name="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => onEmailChange(event.target.value)}
           placeholder="Email address"
           autoComplete="email"
           required
@@ -84,13 +80,13 @@ export function LoginCard() {
 
         {hasRequestedOtp && (
           <input
-            id="otp-input"
+            id="signup-otp-input"
             type="text"
             inputMode="numeric"
             pattern="[0-9]{6}"
             maxLength={6}
             value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
+            onChange={(event) => onOtpChange(event.target.value.replace(/\D/g, ''))}
             placeholder="Six-digit code"
             autoComplete="one-time-code"
             required
@@ -103,19 +99,26 @@ export function LoginCard() {
           disabled={isRequesting || isVerifying}
           className="flex h-10 w-full items-center justify-center rounded-lg bg-[#090A0E] px-4 text-xs font-medium text-white shadow-2xs transition-all hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isRequesting ? 'Sending code...' : isVerifying ? 'Verifying...' : hasRequestedOtp ? 'Verify code' : 'Login with Email'}
+          {isRequesting ? 'Sending code...' : isVerifying ? 'Creating account...' : hasRequestedOtp ? 'Verify code' : 'Create account'}
         </button>
 
         {hasRequestedOtp && (
           <button
             type="button"
-            onClick={() => { setHasRequestedOtp(false); setOtp('') }}
+            onClick={onChangeEmail}
             className="text-xs text-slate-500 underline underline-offset-2"
           >
-            Use a different email
+            Use different details
           </button>
         )}
       </form>
+
+      <p className="mt-4 text-xs text-slate-500">
+        Already have an account?{' '}
+        <Link href="/login" className="font-medium text-slate-800 underline underline-offset-2">
+          Log in
+        </Link>
+      </p>
 
       <p className="mt-3.5 text-center text-[10px] font-normal leading-normal text-slate-400">
         By continuing, you acknowledge{' '}
